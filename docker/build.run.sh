@@ -33,7 +33,7 @@ sync() {
 
 # Build the client
 build() {
-  npm install
+  NPM_CONFIG_PROGRESS=false npm install --silent > /dev/null 2>&1 || { tail -n 1000 npm-debug.log ; false ; }
   # gulp transifex-download
   gulp build
 }
