@@ -155,10 +155,12 @@ This should bring
 
 **Note:** The first build of the Docker server can take several minutes. Wait till you see `server is live @ http://<ip_address_or_localhost/` before attempting to view the site.
 
-### I'm a developer, should I contribute to Ushahidi 3.x?
+## References
+This is one of three repositories related to COMRADES deployment of Ushahidi, [which is being tested here](https://comrades-stg.ushahidi.com/views/map).
+* This repo contains code for the deployment’s graphical user interface. The “development” branch is our sandbox and the “master” branch is production.
+* The primary source code for the functionality of the platform can be found in the [“Platform-comrades” repo here](https://github.com/ushahidi/platform-comrades). The “development” branch is our sandbox and the “master” branch is production.
+* The test deployment also connects to other web services. In the [comrades-service-proxy repo](https://github.com/ushahidi/comrades-service-proxy) you will find code for an intermediary proxy which uses [YODIE from the University of Sheffield](https://gate.ac.uk/applications/yodie.html) to annotate posts in the COMRADES test Platform.
+* The project website for this [COMRADES H2020 European Project](http://www.comrades-project.eu) can be found here. It contains a variety of outputs from the project such as [specific documentation within reports](http://www.comrades-project.eu/outputs/deliverables.html), access to our training [data and ontologies](http://www.comrades-project.eu/outputs/datasets-and-ontologies.html), and [academic research](http://www.comrades-project.eu/outputs/papers.html). 
 
-We would love your help, but the platform is in heavy development with a rapid rate
-of change. If you're keen to help build something awesome, and happy to get deep
-into the core workings... then yes! Read about [getting involved](https://wiki.ushahidi.com/display/WIKI/Ushahidi+v3.x+-+Getting+Involved) page.
-Most of our active development happens on the [Ushahidi Phabricator](https://phabricator.ushahidi.com/).
-If you haven't used Phabricator before, read [Phab Help](https://phabricator.ushahidi.com/w/help/phabricator/) after you sign up.
+## Acknowledgment
+This work has received support from the European Union’s Horizon 2020 research and innovation programme under [grant agreement No 687847](http://cordis.europa.eu/project/rcn/198819_en.html).
