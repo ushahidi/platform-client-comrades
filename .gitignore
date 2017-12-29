@@ -1,3 +1,4 @@
+.idea
 .sass-cache
 bower_components
 node_modules
@@ -19,3 +20,5 @@ vault.txt
 *.svg
 server/www/img/icons/
 server/www/
+app/locales/
+package-lock.json
