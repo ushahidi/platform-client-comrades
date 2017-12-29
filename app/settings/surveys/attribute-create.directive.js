@@ -24,7 +24,7 @@ function (
 
             $scope.createNewAttribute = function (type) {
                 // Set initial label name based on type
-                type.label = 'New ' + type.label.toLowerCase() + ' field';
+                type.label = '';
                 $scope.openAttributeEditModal($scope.activeTask, _.extend($scope.newAttribute, type));
             };
 
@@ -114,7 +114,10 @@ function (
                     label: 'Image',
                     type: 'media',
                     input: 'upload',
-                    description: $translate.instant('survey.upload_desc')
+                    description: $translate.instant('survey.upload_desc'),
+                    config: {
+                        hasCaption: true
+                    }
                 },
                 {
                     label: 'Embed video',
@@ -130,7 +133,7 @@ function (
                 },
                 {
                     label: 'Categories',
-                    type: 'varchar',
+                    type: 'tags',
                     cardinality: 0,
                     input: 'tags',
                     description: $translate.instant('settings.settings_list.categories_desc')

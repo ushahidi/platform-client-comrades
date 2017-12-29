@@ -7,9 +7,7 @@ function PostEditor() {
         restrict: 'E',
         scope: {
             post: '=',
-            attributesToIgnore: '=',
-            form: '=',
-            postMode: '='
+            form: '='
         },
         template: require('./post-editor.html'),
         controller: PostEditorController
@@ -22,10 +20,13 @@ PostEditorController.$inject = [
     '$filter',
     '$location',
     '$translate',
+    '$timeout',
     'moment',
     'PostEntity',
     'PostEndpoint',
+    'PostLockEndpoint',
     'PostEditService',
+    'PostLockService',
     'FormEndpoint',
     'FormStageEndpoint',
     'FormAttributeEndpoint',
@@ -34,7 +35,8 @@ PostEditorController.$inject = [
     'Notify',
     '_',
     'PostActionsService',
-    'MediaEditService'
+    'MediaEditService',
+    '$state'
   ];
 
 function PostEditorController(
@@ -43,10 +45,13 @@ function PostEditorController(
     $filter,
     $location,
     $translate,
+    $timeout,
     moment,
     postEntity,
     PostEndpoint,
+    PostLockEndpoint,
     PostEditService,
+    PostLockService,
     FormEndpoint,
     FormStageEndpoint,
     FormAttributeEndpoint,
@@ -55,7 +60,8 @@ function PostEditorController(
     Notify,
     _,
     PostActionsService,
-    MediaEditService
+    MediaEditService,
+    $state
   ) {
 
     // Setup initial stages container
@@ -66,10 +72,9 @@ function PostEditorController(
     $scope.enableTitle = true;
 
     $scope.setVisibleStage = setVisibleStage;
-    $scope.fetchAttributesAndTasks = fetchAttributesAndTasks;
+    $scope.loadData = loadData;
 
     $scope.allowedChangeStatus = allowedChangeStatus;
-    $scope.getTag = getTag;
     $scope.deletePost = deletePost;
     $scope.canSavePost = canSavePost;
     $scope.savePost = savePost;
@@ -85,45 +90,68 @@ function PostEditorController(
 
     function activate() {
         $scope.post.form = $scope.form;
-        $scope.fetchAttributesAndTasks($scope.post.form.id)
-        .then(function () {
-            // If the post in marked as 'Published' but it is not in
-            // a valid state to be saved as 'Published' warn the user
-            if ($scope.post.status === 'published' && !canSavePost()) {
-                Notify.error('post.valid.invalid_state');
-            }
+        $scope.loadData().then(function () {
+            // Use $timeout to delay this check till after form fields are rendered.
+            $timeout(() => {
+                // If the post in marked as 'Published' but it is not in
+                // a valid state to be saved as 'Published' warn the user
+                if ($scope.post.status === 'published' && !canSavePost()) {
+                    Notify.error('post.valid.invalid_state');
+                }
+            });
         });
 
         $scope.medias = {};
         $scope.savingText = $translate.instant('app.saving');
         $scope.submittingText = $translate.instant('app.submitting');
+
+        if ($scope.post.id) {
+            PostLockService.createSocketListener();
+        }
     }
 
     function setVisibleStage(stageId) {
         $scope.visibleStage = stageId;
     }
 
-    function fetchAttributesAndTasks(formId) {
-        return $q.all([
-            FormStageEndpoint.queryFresh({ formId: formId }).$promise,
-            FormAttributeEndpoint.queryFresh({ formId: formId }).$promise,
-            TagEndpoint.queryFresh({formId: formId}).$promise
-        ]).then(function (results) {
+    function loadData() {
+
+        var requests = [
+            FormStageEndpoint.queryFresh({ formId: $scope.post.form.id }).$promise,
+            FormAttributeEndpoint.queryFresh({ formId: $scope.post.form.id }).$promise,
+            TagEndpoint.queryFresh().$promise
+        ];
+
+        // If existing Post attempt to acquire lock
+        if ($scope.post.id) {
+            requests.push(PostLockEndpoint.getLock({'post_id': $scope.post.id}).$promise);
+        }
+
+        return $q.all(requests).then(function (results) {
+
+            if ($scope.post.id && !results[3]) {
+                // Failed to get a lock
+                // Bounce user back to the detail page where admin/manage post perm
+                // have the option to break the lock
+                $state.go('postEdit', {id: $scope.post.id});
+            }
+
             var post = $scope.post;
             var tasks = _.sortBy(results[0], 'priority');
             var attrs = _.chain(results[1])
                 .sortBy('priority')
                 .value();
-            $scope.categories = results[2];
-            // If attributesToIgnore is set, remove those attributes from set of fields to display
+            var categories = results[2];
             var attributes = [];
             _.each(attrs, function (attr) {
                 if (attr.type === 'title' || attr.type === 'description') {
                     if (attr.type === 'title') {
                         $scope.postTitleLabel = attr.label;
+                        $scope.postTitleInstructions = attr.instructions;
                     }
                     if (attr.type === 'description') {
                         $scope.postDescriptionLabel = attr.label;
+                        $scope.postDescriptionInstructions = attr.instructions;
                     }
                 } else {
                     attributes.push(attr);
@@ -140,29 +168,14 @@ function PostEditorController(
                     }
                     $scope.medias[attr.key] = {};
                 }
-                // assingning tag-objects to attribute-options
                 if (attr.input === 'tags') {
-                    var tags = [];
-                    $scope.tagKeys.push(attr.key);
-                    _.each(attr.options, function (tagId) {
-                        var tag = $scope.getTag(tagId);
-                        if (tag && tag.children) {
-                            var children = [];
-                            _.each(tag.children, function (child) {
-                                child = $scope.getTag(parseInt(child.id));
-                                // protecting from undefined tags
-                                if (child) {
-                                    children.push(child);
-                                }
-                            });
-                            tag.children = children;
-                        }
-                        // protecting from undefined tags
-                        if (tag) {
-                            tags.push(tag);
-                        }
-                    });
-                    attr.options = tags;
+                    // adding category-objects attribute-options
+                    attr.options = _.chain(attr.options)
+                        .map(function (category) {
+                            return _.findWhere(categories, {id: category});
+                        })
+                        .filter()
+                        .value();
                 }
                 // @todo don't assign default when editing? or do something more sane
                 if (!$scope.post.values[attr.key]) {
@@ -224,23 +237,19 @@ function PostEditorController(
         });
 
     }
-    function getTag(tagId) {
-        var tag;
-        _.each($scope.categories, function (category) {
-            if (category.id === tagId) {
-                tag = category;
-            }
-        });
-        return tag;
-    }
+
     function canSavePost() {
         return PostEditService.validatePost($scope.post, $scope.postForm, $scope.tasks);
     }
 
     function cancel() {
-
-        var path = $scope.post.id ? '/posts/' + $scope.post.id : '/';
-        $location.path(path);
+        PostLockEndpoint.unlock($scope.post.lock).$promise.then(function (result) {
+            if ($scope.post.id) {
+                $state.go('posts.data.detail', {view: 'data', postId: $scope.post.id});
+            } else {
+                $state.go('posts.data');
+            }
+        });
     }
 
     function deletePost(post) {
@@ -276,14 +285,13 @@ function PostEditorController(
             var post = PostEditService.cleanPostValues(angular.copy($scope.post));
             // adding neccessary tags to post.tags, needed for filtering
             if ($scope.tagKeys.length > 0) {
-                var tags = [];
-                _.each($scope.tagKeys, function (tagKey) {
-                    tags = tags.concat(post.values[tagKey]);
-                });
-                tags = _.uniq(tags);
-                if (tags[0] !== undefined) {
-                    post.tags = tags;
-                }
+                post.tags = _.chain(post.values)
+                .pick($scope.tagKeys) // Grab just the 'tag' fields        { key1: [0,1], key2: [1,2], key3: undefined }
+                .values()             // then take their values            [ [0,1], [1,2], undefined ]
+                .flatten()            // flatten them into a single array  [0,1,1,2,undefined]
+                .filter()             // Remove nulls                      [0,1,1,2]
+                .uniq()               // Remove duplicates                 [0,1,2]
+                .value();             // and output
             }
             var request;
             if (post.id) {
@@ -298,10 +306,10 @@ function PostEditorController(
                     $scope.saving_post = false;
                     $scope.post.id = response.id;
                     Notify.notify(success_message, { name: $scope.post.title });
-                    $location.path('/posts/' + response.id);
+                    $state.go('posts.data.detail', {postId: response.id});
                 } else {
                     Notify.notify(success_message, { name: $scope.post.title });
-                    $location.path('/');
+                    $state.go('posts.map.all');
                 }
             }, function (errorResponse) { // errors
                 var validationErrors = [];

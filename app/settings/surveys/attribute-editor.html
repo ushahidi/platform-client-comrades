@@ -1,7 +1,7 @@
  <div class="modal-body">
   <div class="form-field">
       <label translate="app.name">Name</label>
-      <input type="text" ng-model="editAttribute.label" ng-click="editName()">
+      <input type="text" ng-model="editAttribute.label" placeholder="{{ 'form.field_name_placeholder' | translate}}">
    </div>
    <div class="form-field switch">
       <label translate="survey.show_field_description">Show field description</label>
@@ -11,7 +11,7 @@
       </div>
 
       <div class="form-field" data-fieldgroup-target="field-description-new" ng-show="descriptionToggle">
-          <input type="text" placeholder="Explain this field...">
+          <input type="text" placeholder="{{ 'form.add_field_instructions_placeholder' | translate}}" ng-model="editAttribute.instructions">
       </div>
   </div>
    <div ng-if="canDisplay()">
@@ -31,18 +31,12 @@
    </div>
    <!-- editing/adding categories -->
     <div class="form-field" ng-if="editAttribute.input ==='tags'">
-      <label translate>Which labels should be available</label>
-        <div ng-repeat="category in availableCategories">
-            <label>
-              <input 
-                type="checkbox"
-                checklist-model="editAttribute.options"
-                checklist-value="category.id"
-              />
-              {{category.tag}}
-            </label>
-        </div>
-      </div>
+        <label translate>Which categories should be available</label>
+        <category-selector
+            available="availableCategories"
+            selected="editAttribute.options"
+        ></category-selector>
+    </div>
     <!-- End of editing/adding categories -->
         <div class="form-field" ng-if="editAttribute.input === 'relation'">
             <label translate>survey.field_allowed_relation_survey</label>
@@ -62,7 +56,20 @@
              <label class="tgl-btn" for="switchnewattribute"></label>
           </div>
        </div>
-       <div class="form-field switch">
+
+       <!-- start: media upload toggle to make caption an optional field-->
+       <div class="form-field switch" ng-show="canDisableCaption()">
+         <label translate="survey.collect_image_caption">Disable Caption field</label>
+         <p data-fieldgroup-target="field-caption-disabled-warning" class="init active" translate="survey.disable_caption_field_explanation" ng-show="!editAttribute.config.hasCaption">
+           This will disable all captions for this field, but it won't delete them from the database. You will be able to re-enable them later.
+         </p>
+           <div class="toggle-switch">
+           <input class="tgl" id="switch-hascaption" type="checkbox" ng-model="editAttribute.config.hasCaption">
+           <label class="tgl-btn" for="switch-hascaption"></label>
+         </div>
+       </div>
+       <!-- end: media upload toggle to make caption an optional field-->
+       <div class="form-field switch" ng-show="canMakePrivate()">
           <label translate="survey.make_response_private">Make responses private</label>
           <p data-fieldgroup-target="field-private-message-3" class="init active" translate="survey.response_private_desc" ng-show="editAttribute.response_private">
             <svg class="iconic">
@@ -94,7 +101,7 @@
         </div>
    </div>
    <div class="form-field">
-      <button ng-show="!editAttribute.id" type="button" class="button-alpha modal-trigger" ng-click="addNewAttribute(editAttribute)" translate="app.add_and_close">Add &amp; close</button>
-      <button ng-show="editAttribute.id" type="button" class="button-alpha modal-trigger" ng-click="addNewAttribute(editAttribute)" translate="app.update_and_close">Update &amp; close</button>
+      <button ng-show="!editAttribute.id" type="button" class="button-alpha modal-trigger" ng-click="addNewAttribute(editAttribute, activeTask)" translate="app.add_and_close">Add &amp; close</button>
+      <button ng-show="editAttribute.id" type="button" class="button-alpha modal-trigger" ng-click="addNewAttribute(editAttribute, activeTask)" translate="app.update_and_close">Update &amp; close</button>
    </div>
 </div>

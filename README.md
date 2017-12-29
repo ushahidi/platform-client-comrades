@@ -1,5 +1,7 @@
-Ushahidi Platform Prototype
-===========================
+Ushahidi Platform Web Client
+============================
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/ushahidi/platform-client.svg)](https://greenkeeper.io/)
 
 [![Build Status](https://travis-ci.org/ushahidi/platform-client.svg?branch=master)](https://travis-ci.org/ushahidi/platform-client)
 [![Coverage Status](https://coveralls.io/repos/github/ushahidi/platform-client/badge.svg?branch=master)](https://coveralls.io/github/ushahidi/platform-client?branch=master)
@@ -74,7 +76,7 @@ Our gulp build
 
 #### Set default options with .env
 
-Instead of having to type the flags every time, you can also use a `.gulpconfig.json` file to set the default options for running the client.
+Instead of having to type the flags every time, you can also use a `.env` file to set the default options for running the client.
 
 ```
 NODE_SERVER=true
@@ -83,6 +85,7 @@ UGLIFY_JS=true
 MOCK_BACKEND=false
 KARMA_CHROME=false
 PORT=8080
+APP_LANGUAGES=en,ar
 ```
 
 * `NODE_SERVER` - always run the `node-server` task
@@ -91,6 +94,7 @@ PORT=8080
 * `MOCK_BACKEND` - build the app with an mock backend.
 * `KARMA_CHROME` - Use chrome to run karma tests
 * `PORT` - set the port to run `node-server`
+* `APP_LANGUAGES` - sets the available languages. Defaults to showing all languages
 
 #### Optional: Mock Backend
 
@@ -102,20 +106,13 @@ To build with the mock backend service, run `gulp build --mock-backend`.
 
 #### Running unit specs
 
-To run unit tests run:
+To run unit tests once, run:
 ```
 gulp test
 ```
 
-To run end-to-end integration tests run:
-
-```
-gulp build --mock-backend
-gulp node-server # <- might need to run this in another window
-npm run protractor
-```
-
 For test driven development we have a gulp task `gulp tdd`. This watches for JS changes and re-runs the unit tests.
+
 
 ### Native Server (Apache or Nginx)
 

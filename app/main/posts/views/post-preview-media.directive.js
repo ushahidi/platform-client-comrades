@@ -15,24 +15,23 @@ function (
         },
         template: require('./post-preview-media.html'),
         link: function ($scope) {
-
             if (!$scope.post.form) {
                 return;
             }
 
-            FormAttributeEndpoint.queryFresh({formId: $scope.post.form.id}).$promise
+            FormAttributeEndpoint.query({formId: $scope.post.form.id}).$promise
                 .then(function (attributes) {
 
                     // Use image from the first media attribute
                     var mediaAttribute = _.find(attributes, function (attribute) {
                         return attribute.type === 'media';
                     });
-
                     // Get the media url and caption
                     if (mediaAttribute && !_.isUndefined($scope.post.values[mediaAttribute.key])) {
                         MediaEndpoint.get({id: $scope.post.values[mediaAttribute.key]}).$promise
                             .then(function (media) {
                                 $scope.media = media;
+                                $scope.hasCaption = mediaAttribute.config ? mediaAttribute.config.hasCaption : true;
                             });
                     }
                 });

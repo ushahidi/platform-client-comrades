@@ -24,7 +24,8 @@ CollectionListingController.$inject = [
     'Notify',
     'CollectionEndpoint',
     '_',
-    'CollectionsService'
+    'CollectionsService',
+    '$state'
 ];
 function CollectionListingController(
     $rootScope,
@@ -35,9 +36,9 @@ function CollectionListingController(
     Notify,
     CollectionEndpoint,
     _,
-    CollectionsService
+    CollectionsService,
+    $state
 ) {
-    var collectionsPath = '/collections/';
 
     $scope.postInCollection = postInCollection;
     $scope.toggleCollection = toggleCollection;
@@ -45,6 +46,7 @@ function CollectionListingController(
     $scope.collectionClickHandler = collectionClickHandler;
     $scope.createNewCollection = createNewCollection;
     $scope.searchCollections = loadCollections;
+    $scope.currentUser = $rootScope.currentUser;
 
     activate();
 
@@ -131,7 +133,12 @@ function CollectionListingController(
     // they will be directed to the collection page
     function goToCollection(collection) {
         $scope.$parent.closeModal();
-        $location.path(collectionsPath + collection.id + '/' + collection.view);
+        var viewParam = collection.view;
+        if (viewParam === 'list' || viewParam === 'data') {
+            $state.go('posts.data.collection', {collectionId: collection.id});
+        } else {
+            $state.go('posts.map.collection', {collectionId: collection.id});
+        }
     }
 
     // Toggle a post as selected or not

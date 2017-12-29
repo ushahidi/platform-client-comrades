@@ -10,12 +10,12 @@ function SavedSearchModal() {
     };
 }
 
-SavedSearchModalController.$inject = ['$scope', '$element', '$attrs', '$rootScope', 'UserEndpoint', 'SavedSearchEndpoint', '_', 'ModalService'];
-function SavedSearchModalController($scope, $element, $attrs, $rootScope, UserEndpoint, SavedSearchEndpoint, _, ModalService) {
-    var users = [];
-
+SavedSearchModalController.$inject = ['$scope', '$element', '$attrs', '$rootScope', '$location', 'UserEndpoint', 'SavedSearchEndpoint', '_', 'ModalService', '$state'];
+function SavedSearchModalController($scope, $element, $attrs, $rootScope, $location, UserEndpoint, SavedSearchEndpoint, _, ModalService, $state) {
     $scope.searchSearches = searchSearches;
     $scope.createNewSearch = createNewSearch;
+    $scope.goToSearch = goToSearch;
+    $scope.loading = false;
     activate();
 
     // Reload searches on login / logout events
@@ -24,6 +24,7 @@ function SavedSearchModalController($scope, $element, $attrs, $rootScope, UserEn
     $scope.$on('savedSearch:update', loadSavedSearches);
 
     function activate() {
+        $scope.loading = true;
         loadSavedSearches();
     }
 
@@ -32,21 +33,16 @@ function SavedSearchModalController($scope, $element, $attrs, $rootScope, UserEn
         $scope.searches = [];
         query = query || {};
         SavedSearchEndpoint.query(query).$promise.then(function (searches) {
-            $scope.searches = searches;
-
-            angular.forEach($scope.searches, function (search) {
-                // if this search has a user, and its not the currentUser
-                if (_.isObject(search.user) && search.user.id !== _.result($rootScope.currentUser, 'userId')) {
-                    // Load the user (if we haven't already)
-                    if (!users[search.user.id]) {
-                        users[search.user.id] = UserEndpoint.getFresh({id: search.user.id});
-                    }
-                    // Save user info onto the search itself
-                    search.user = users[search.user.id];
-                }
+            $scope.searches = _.filter(searches, function (search) {
+                var isOwner = (search.user && search.user.id === _.result($rootScope.currentUser, 'userId')) === true;
+                return search.featured || isOwner;
             });
+            $scope.loading = false;
+        }, function (fail) {
+            $scope.loading = false;
         });
     }
+
     function createNewSearch() {
         // Copy the current filters into our search..
         ModalService.openTemplate('<saved-search-editor saved-search="savedSearch"></saved-search-editor>', 'set.create_savedsearch', 'star', $scope, false, false);
@@ -56,4 +52,24 @@ function SavedSearchModalController($scope, $element, $attrs, $rootScope, UserEn
             q : query
         });
     }
+
+    /**
+     * @param searchId: the saved search id, used to identify it in the url path.
+     * We are just closing the modal before we go to the new saved search the user selected in the frontend.
+     * See: https://waffle.io/ushahidi/platform/cards/598289fa17b93500a65be936
+     */
+    function goToSearch(savedSearch) {
+        ModalService.close();
+        // This feature is only available in Lisiting mode
+        // When a user clicks on a collection lisiting item
+        // they will be directed to the collection page
+        $scope.$parent.closeModal();
+        var viewParam = savedSearch.view;
+        if (viewParam === 'list' || viewParam === 'data') {
+            $state.go('posts.data.savedsearch', {savedSearchId: savedSearch.id}, {reload: true});
+        } else {
+            $state.go('posts.map.savedsearch', {savedSearchId: savedSearch.id}, {reload: true});
+        }
+    }
+
 }
