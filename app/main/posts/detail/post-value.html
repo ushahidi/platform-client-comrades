@@ -1,27 +1,29 @@
 <div ng-class="{'postcard-field': !standardTask, 'listing-item-primary': standardTask}">
-
     <div ng-if="attribute.input !== 'video'">
       <h2 class="form-label">
-          {{attribute.label}}
+          <bdi>{{attribute.label}}</bdi>
       </h2>
-
-      <div ng-if="attribute.input === 'tags'">
-       <p>
-        <svg class="iconic" style="margin-right:4px;">
-            <use xlink:href="/img/iconic-sprite.svg#tag"></use>
-        </svg>
-          {{value}}
+        <p ng-if="attribute.input === 'tags'">{{attribute.instructions}}</p>
+    </div>
+    <!-- confidence score tags -->
+    <div ng-if="attribute.input === 'tags'">
+        <p ng-repeat="entry in score_tags track by $index">
+            <svg class="iconic" style="margin-right:4px;">
+                <use xlink:href="/img/iconic-sprite.svg#tag"></use>
+            </svg>
+            <bdi ng-if="entry.score !== null"><a title="{{entry.source}}" href="#" target="_blank">{{entry.tag_name}}<strong ng-if="entry.score != null"> {{entry.score}}% confidence</strong></a></bdi>
+            <bdi ng-if="entry.score === null">{{entry.tag_name}}</bdi>
         </p>
-      </div>
-
-      <div ng-repeat="entry in value track by $index" ng-if="attribute.type === 'relation'">
-          <a ui-sref="posts.detail.data({postId: entry.id})">{{entry.title}}</a>
+    </div>
+  <!-- end confidence score tags -->
+  <div ng-repeat="entry in value track by $index" ng-if="attribute.type === 'relation'">
+      <a ui-sref="posts.detail.data({postId: entry.id})"><bdi>{{entry.title}}</bdi></a>
       </div>
      <div ng-repeat="entry in value track by $index" ng-if="attribute.type !== 'relation' && attribute.input !== 'tags'">
-          <p ng-if="attribute.type !== 'markdown'" linkify>{{entry}}</p>
+          <p ng-if="attribute.type !== 'markdown'" linkify><bdi>{{entry}}</bdi></p>
           <p ng-if="attribute.type === 'markdown'" markdown-to-html="entry"></p>
       </div>
-    </div>
+    </p>
 
     <post-video-view
       ng-if="attribute.input === 'video'"

@@ -80,8 +80,6 @@ function PostDataEditorController(
     $scope.deletePost = deletePost;
     $scope.canSavePost = canSavePost;
     $scope.savePost = savePost;
-    $scope.postTitleLabel = 'Title';
-    $scope.postDescriptionLabel = 'Description';
     $scope.tagKeys = [];
     $scope.save = $translate.instant('app.save');
     $scope.saving = $translate.instant('app.saving');
@@ -90,7 +88,9 @@ function PostDataEditorController(
     $scope.hasPermission = $rootScope.hasPermission('Manage Posts');
     $scope.selectForm = selectForm;
     $scope.isSaving = LoadingProgress.getSavingState;
+    $scope.tags_confidence_score = $scope.post.tags_confidence_score;
 
+    $scope.attributes = [];
     var ignoreCancelEvent = false;
     // Need state management
     $scope.$on('event:edit:post:reactivate', function () {
@@ -234,30 +234,15 @@ function PostDataEditorController(
 
             var post = $scope.post;
             var tasks = _.sortBy(results[0], 'priority');
-            var attrs = _.chain(results[1])
+            var attributes = _.chain(results[1])
                 .sortBy('priority')
                 .value();
             var categories = results[2];
 
             // Set Post Lock
             $scope.post.lock = results[3];
-
-            var attributes = [];
-            _.each(attrs, function (attr) {
-                if (attr.type === 'title' || attr.type === 'description') {
-                    if (attr.type === 'title') {
-                        $scope.postTitleLabel = attr.label;
-                        $scope.postTitleInstructions = attr.instructions;
-                    }
-                    if (attr.type === 'description') {
-                        $scope.postDescriptionLabel = attr.label;
-                        $scope.postDescriptionInstructions = attr.instructions;
-                    }
-                } else {
-                    attributes.push(attr);
-                }
-            });
-
+            $scope.attributes = attributes;
+            $scope.tags = categories;
             // Initialize values on post (helps avoid madness in the template)
             attributes.map(function (attr) {
                 // Create associated media entity
@@ -270,13 +255,9 @@ function PostDataEditorController(
                 }
                 if (attr.input === 'tags') {
                     // adding category-objects attribute-options
-                    attr.options = _.chain(attr.options)
-                        .map(function (category) {
-                            return _.findWhere(categories, {id: category});
-                        })
-                        .filter()
-                        .value();
+                    attr.options = PostActionsService.filterPostEditorCategories(attr.options, categories);
                 }
+
                 // @todo don't assign default when editing? or do something more sane
                 if (!$scope.post.values[attr.key]) {
                     if (attr.input === 'location') {
@@ -356,6 +337,36 @@ function PostDataEditorController(
         return MediaEditService.saveMedia($scope.medias, $scope.post);
     }
 
+    // TODO Move to Service ewwwwww
+    function getConfidenceScores(tags) {
+        var selectedTagIds = $scope.attributes.map(attribute => {
+            if ($scope.post.values[attribute.key] && attribute.input === 'tags') {
+                return $scope.post.values[attribute.key];
+            }
+        })
+            .flatten()
+            .filter(tag => {
+                    return typeof tag !== 'undefined';
+                }
+            );
+        // getting tag-names and formatting them for displaying
+        return _.map(selectedTagIds, function (tag) {
+            var foundTag = _.where($scope.tags, {id: tag}).pop();
+            var confidenceScoreTag = _.where($scope.tags_confidence_score, {tag_id: tag}).pop();
+            if (confidenceScoreTag && foundTag) {
+                return {
+                    url: foundTag.url,
+                    id: foundTag.id,
+                    confidence_score: confidenceScoreTag.score
+                };
+                //foundTag.confidence_score = confidenceScoreTag.score;
+            }
+        }).filter(tag => {
+                return typeof tag !== 'undefined';
+            }
+        );
+    }
+
     function savePost() {
         // Checking if changes are made
         if ($scope.editForm && !$scope.editForm.$dirty) {
@@ -389,7 +400,9 @@ function PostDataEditorController(
                 .filter()             // Remove nulls                      [0,1,1,2]
                 .uniq()               // Remove duplicates                 [0,1,2]
                 .value();             // and output
+
             }
+            post.tags = getConfidenceScores(post.tags);
             var request;
             if (post.id) {
                 request = PostEndpoint.update(post);

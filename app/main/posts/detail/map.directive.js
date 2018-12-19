@@ -14,6 +14,8 @@ function PostDetailMap(PostEndpoint, Maps, _, PostFilters, L, $q, $rootScope, $c
     function DetailMapLink($scope, element, attrs) {
         var map;
         $scope.hideMap = false;
+        $scope.emptyGeoJSON = false;
+        $scope.geojson = [];
 
         activate();
 
@@ -43,6 +45,10 @@ function PostDetailMap(PostEndpoint, Maps, _, PostFilters, L, $q, $rootScope, $c
             })
             // Create the map
             .then(addGeoJSONToMap)
+            .then((data) => {
+                // Save points to scope
+                $scope.features = data.geojson.features.filter(f => f.geometry.type === 'Point');
+            })
             ;
 
             // Cleanup leaflet map
@@ -60,6 +66,7 @@ function PostDetailMap(PostEndpoint, Maps, _, PostFilters, L, $q, $rootScope, $c
             // If theres no location data, drop out now
             if (geojsonData.features && geojsonData.features.length === 0) {
                 $scope.hideMap = true;
+                $scope.emptyGeoJSON = true;
                 return;
             }
             $scope.hideMap = false;
@@ -69,12 +76,13 @@ function PostDetailMap(PostEndpoint, Maps, _, PostFilters, L, $q, $rootScope, $c
             });
             geojson.addTo(map);
 
-            // Focus map on data points but..
-            // Avoid zooming further than 15 (particularly when we just have a single point)
             map.fitBounds(geojson.getBounds());
+            // Focus map on data points when doing the auto boundaries fit but..
+            // Avoid zooming further than 15 (particularly when we just have a single point)
             if (map.getZoom() > 15) {
                 map.setZoom(15);
             }
+            return data;
         }
     }
 }

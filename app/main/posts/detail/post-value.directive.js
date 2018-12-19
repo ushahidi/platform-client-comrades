@@ -11,6 +11,8 @@ module.exports = ['PostEndpoint', 'moment', '_', function (PostEndpoint, moment,
         },
         template: require('./post-value.html'),
         link: function ($scope) {
+            $scope.score_tags = [];
+            $scope.confidenceScores = $scope.$parent.post.tags_confidence_score;
             // This whole directive is wrong and it should feel wrong
             // Depending on whether we are dealing with a post task or a standard task
             // the css class is swapped. This Boolean manages that distinction.
@@ -32,13 +34,41 @@ module.exports = ['PostEndpoint', 'moment', '_', function (PostEndpoint, moment,
                 });
                 return formatedTags;
             };
+            // TODO Move to Service ewwwwww
+            $scope.formatTagsWithScores = function (tagIds) {
+                var withChildren = [];
+                // getting tag-names and formatting them for displaying
+                _.each(tagIds, function (tag, index) {
+                    var tagObj = _.where($scope.tags, {id: parseInt(tag)});
+                    var confidenceScoreTag = _.where($scope.confidenceScores, {tag_id: parseInt(tag)}).pop();
+                    if (confidenceScoreTag && tagObj[0]) {
+                        confidenceScoreTag.tag_name = tagObj[0].tag;
+                        confidenceScoreTag.score = Math.round(confidenceScoreTag.score);
+                        confidenceScoreTag.source = confidenceScoreTag.source ? 'SOURCE: ' + confidenceScoreTag.source : 'SOURCE: Unknown';
+                        withChildren.push(confidenceScoreTag);
+                    } else if (tagObj[0]) {
+                        let confidenceScoreNew = {
+                            score: null,
+                            tag_name: tagObj[0].tag
+                        };
+                        withChildren.push(confidenceScoreNew);
+                    }
+                });
+                return withChildren;
+            };
+
             if ($scope.attribute.type === 'relation') {
                 $scope.value = $scope.value.map(function (entry) {
-                    return PostEndpoint.get({ id : entry });
+                    return PostEndpoint.get({id: entry});
                 });
             }
-            if ($scope.attribute.input === 'tags') {
+
+            if ($scope.attribute.input === 'tags' && $scope.confidenceScores.length === 0) {
+                $scope.score_tags = $scope.formatTagsWithScores($scope.value);
                 $scope.value = $scope.formatTags($scope.value);
+            } else if ($scope.attribute.input === 'tags' && $scope.confidenceScores.length > 0) {
+                $scope.score_tags = $scope.formatTagsWithScores($scope.value);
+                $scope.value = $scope.formatTags(_.pluck($scope.confidenceScores, 'tag_id'));
             }
             if ($scope.attribute.type === 'datetime') {
                 if ($scope.attribute.input === 'date') {

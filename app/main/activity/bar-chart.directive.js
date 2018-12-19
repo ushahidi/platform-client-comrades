@@ -83,9 +83,12 @@ function ActivityBarChartController($scope, $translate, PostEndpoint, d3, _, Pos
     function getPostStats(query) {
         query = query || PostFilters.getQueryParams($scope.filters);
         var postQuery = _.extend({}, query, {
-            'group_by' : $scope.groupBy.value
+            'group_by' : $scope.groupBy.value,
+            'ignore403': '@ignore403'
         });
-
+        if (!postQuery.status) {
+            postQuery.status = 'all';
+        }
         $scope.isLoading = true;
         PostEndpoint.stats(postQuery).$promise.then(function (results) {
             $scope.options.chart.xAxis.axisLabel = $translate.instant($scope.groupByOptions[$scope.groupBy.value]);

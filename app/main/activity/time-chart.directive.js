@@ -94,9 +94,12 @@ function ActivityTimeChartController($scope, $translate, PostEndpoint, d3, _, Po
         var postQuery = _.extend({}, query, {
             'timeline' : 1,
             'timeline_attribute' : $scope.timelineAttribute,
-            'group_by' : $scope.groupBy.value
+            'group_by' : $scope.groupBy.value,
+            'ignore403': '@ignore403'
         });
-
+        if (!postQuery.status) {
+            postQuery.status = 'all';
+        }
         $scope.isLoading = true;
         PostEndpoint.stats(postQuery).$promise.then(function (results) {
             if (!results.totals.length || _.chain(results.totals).pluck('values').pluck('length').max().value() < 3) {
