@@ -13,7 +13,7 @@ ___
 
 [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
-You need to deploy the [Platform API](http://github.com/ushahidi/platform) first
+You need to deploy the [Platform API](http://github.com/ushahidi/platform-comrades) first
 
 # Platform Client installation
 
@@ -33,7 +33,7 @@ The web client is the component that end users interact with when opening the Pl
 Clone the repository \(this will create a directory named _platform-client\)_
 
 ```bash
-git clone https://github.com/ushahidi/platform-client.git
+git clone https://github.com/ushahidi/platform-client-comrades.git
 ```
 
 Go into the platform directory
