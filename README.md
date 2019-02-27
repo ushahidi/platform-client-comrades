@@ -1,25 +1,18 @@
 [download]: https://github.com/ushahidi//platform-client-comrades/releases
-[install]: <- configuration manual
+![COMRADES Logo](Associated_Files/COMRADES_logo.png)
 
 # COMRADES Platform Web Client
-============================
-
-here <- make sure to link back to landing repo
+If you have not, [please see the landing repo for the COMRADES project here](https://github.com/ushahidi/platform-comrades/blob/master/README.md).
 
 You need to deploy the [COMRADES Platform API](http://github.com/ushahidi/platform-comrades) first
 
 # COMRADES Platform Client installation
-
 [Download][download]
 
-[Installation Guide][install]
-
+The [Configuration & Set-up Manual for the COMRADES Platform can be found here](https://s3-eu-west-1.amazonaws.com/comradesmanual/Comrades+Manual/COMRADES+Config+Setup+Manual.pdf). 
 
 ### What is the COMRADES platform client?
-
 The web client is the component that end users interact with when opening the Platform website with a web browser. The client interacts with the API in order to perform operations on the system \(i.e. submit posts, query posts\).
-
-
 
 ## References
 This is one of three repositories related to COMRADES deployment of Ushahidi, [which is being tested here](https://comrades-stg.ushahidi.com/views/map).
